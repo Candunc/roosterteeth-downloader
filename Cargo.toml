@@ -1,0 +1,17 @@
+[package]
+name = "rtdownloader"
+version = "0.1.0"
+authors = ["Duncan Bristow <duncbristow@msn.com>"]
+edition = "2018"
+
+[dependencies]
+#const-concat = {git = "https://github.com/Vurich/const-concat"}
+chrono = "0.4"
+reqwest = "0.9"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+
+[dependencies.rusqlite]
+version = "0.16"
+features = ["bundled"]
