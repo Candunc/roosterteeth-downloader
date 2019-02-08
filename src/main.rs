@@ -3,10 +3,10 @@ extern crate serde_derive;
 
 use std::env;
 
+mod config;
 mod framework;
 mod sql;
 use framework::Framework;
-
 
 fn main() -> Result<(), Box<std::error::Error>>{
 	let mut framework = Framework::new()?;

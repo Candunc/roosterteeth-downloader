@@ -1,17 +1,19 @@
 use std::collections::HashMap;
 use std::error::Error;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use std::string::String;
 use std::time::SystemTime;
 
 use chrono::DateTime;
+use directories::ProjectDirs;
 use reqwest::Client;
 use rusqlite::NO_PARAMS;
 use serde_json::Value;
 
+use crate::config::Config;
 use crate::sql::Sql;
 
-const DATABASE_PATH: &'static str = "rtdownloader.sqlite";
+const DATABASE_PATH: &'static str = "/rtdownloader.sqlite";
 const API_DOMAIN: &'static str = "https://svod-be.roosterteeth.com";
 const API_EPISODES: &'static str = "https://svod-be.roosterteeth.com/api/v1/episodes?per_page=100&order=desc&page=1";
 
@@ -69,6 +71,7 @@ impl Video {
 }
 
 pub struct Framework {
+	config: Config,
 	client: Client,
 	sql: Sql,
 	time: u64,
@@ -77,9 +80,15 @@ pub struct Framework {
 
 impl Framework {
 	pub fn new() -> Result<Framework, Box<Error>> {
+		let project = ProjectDirs::from("com", "Duncan Bristow", "rt-downloader").expect("Cannot find base directory");
+		let path = project.data_dir();
+		let dir = String::from(path.to_str().ok_or("Invalid path!")?);
+		std::fs::create_dir_all(path)?;
+
 		Ok(Framework {
+			config: Config::load(dir.clone())?,
 			client: Client::new(),
-			sql: Sql::new(DATABASE_PATH)?,
+			sql: Sql::new(&format!("{}/{}",dir,DATABASE_PATH))?,
 			time: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_secs(),
 			new_metadata: false
 		})
@@ -150,8 +159,9 @@ impl Framework {
 		let queue = self.sql.select_for_download()?;
 		for episode in queue {
 			// Todo: pipe stdout to current terminal
-			Command::new("ffmpeg").args(&["-i", &episode.m3u8, "-vcodec", "copy", "-c:a", "copy", &format!("S{}E{}.mp4", episode.season, episode.number)])
-				.output().expect("error!");
+			std::fs::create_dir_all(format!("{}/{}", self.config.media_directory, episode.show_title))?;
+			Command::new("ffmpeg").stdout(Stdio::piped()).args(&["-i", &episode.m3u8, "-vcodec", "copy", "-c:a", "copy", &format!("{}/{}/S{}E{}.mp4", self.config.media_directory, episode.show_title, episode.season, episode.number)])
+				.spawn().expect("error!");
 			self.sql.update_downloaded(&episode.uuid)?;
 		}
 

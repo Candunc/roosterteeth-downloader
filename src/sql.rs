@@ -24,8 +24,8 @@ pub struct Sql {
 }
 
 impl Sql {
-	pub fn new(path: &'static str) -> Result<Sql, Box<Error>> {
-		let conn = Connection::open(path)?;
+	pub fn new(path: &String) -> Result<Sql, Box<Error>> {
+		let conn = Connection::open(&path)?;
 
 		// Initialize database if does it doesn't exist
 		conn.execute("CREATE TABLE IF NOT EXISTS videos (uuid TEXT PRIMARY KEY, show_title TEXT NOT NULL, season INTEGER NOT NULL, number INTEGER NOT NULL, title TEXT NOT NULL, slug TEXT NOT NULL, release INTEGER NOT NULL, m3u8 TEXT, downloaded INTEGER DEFAULT 0)", NO_PARAMS)?;
